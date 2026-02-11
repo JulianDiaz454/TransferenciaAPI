@@ -1,41 +1,32 @@
+import { getPosts, getComments } from "./modules/consultas.js";
+
 const AnalizarComentarios = async () => {
-    // Consultamos la lista de publicaciones y la convertimos a JSON
-    const respuestaPosts = await fetch('http://localhost:3000/posts');
-    const listaDePosts = await respuestaPosts.json();
+    // Usamos Promise.all para cargar ambos datos al mismo tiempo
+    const [listaDePosts, listaDeComentarios] = await Promise.all([
+        getPosts(),
+        getComments()
+    ]);
 
-    // Consultamos la lista de comentarios y la convertimos a JSON
-    const respuestaComments = await fetch('http://localhost:3000/comments');
-    const listaDeComentarios = await respuestaComments.json();
-
-    const reporteFinal = [];
-
-    // Bucle para recorrer la lista de publicaciones
-    for (const publicacion of listaDePosts) {
-        // Filtramos usando Number para tener el mismo tipo de dato
+    // Transformamos el array de posts en el reporte final usando .map()
+    const reporteFinal = listaDePosts.map(publicacion => {
+        // Filtramos los comentarios que pertenecen a esta publicación
         const comentariosAsociados = listaDeComentarios.filter(comentario => 
             Number(comentario.postId) === Number(publicacion.id)
         );
         
-        const totalComentarios = comentariosAsociados.length;
+        const total = comentariosAsociados.length;
 
-        let estadoInteraccion = "";
-        if (totalComentarios > 0) {
-            estadoInteraccion = "Con comentarios";
-        } else {
-            estadoInteraccion = "Sin comentarios";
-        }
-
-        const datosPublicacion = {
+        // Retornamos el objeto directamente
+        return {
             titulo: publicacion.title,
-            cantidad_comentarios: totalComentarios,
-            estado: estadoInteraccion
+            cantidad_comentarios: total,
+            // Usamos un ternario para simplificar el estado
+            estado: total > 0 ? "Con comentarios" : "Sin comentarios"
         };
-
-        reporteFinal.push(datosPublicacion);
-    }
+    });
     
     console.log("Reporte de publicaciones y comentarios:");
-    console.log(reporteFinal);
+    console.log(reporteFinal); 
 }
 
 AnalizarComentarios();

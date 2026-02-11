@@ -1,31 +1,24 @@
+import { getComments, deletePost } from "./modules/consultas.js";
+
 const EliminarPublicacion = async (id) => {
-    // Hacemos la petición de datos
-    const respuestaComentarios = await fetch('http://localhost:3000/comments');
-    const listaComentarios = await respuestaComentarios.json();
+    // 1. Consultamos SOLO los comentarios de este post
+    const comentariosAsociados = await getComments(id);
 
-    // Filtramos los comentarios del ID de publicación
-    const comentariosEncontrados = listaComentarios.filter(comentario => 
-        Number(comentario.postId) === Number(id)
-    );
+    // 2. Usamos la lógica de validación
+    if (comentariosAsociados.length > 0) {
+        console.warn(`No se puede eliminar la publicación ${id}: tiene ${comentariosAsociados.length} comentarios.`);
+    } else {
+        // 3. Si está limpio, procedemos a borrar
+        const exito = await deletePost(id);
 
-    // Validamos que haya al menos un comentario
-    if (comentariosEncontrados.length > 0) { // Si hay comentarios no eliminamos la publicación
-        console.log("No se puede eliminar la publicación porque tiene comentarios");
-    } else { // Si no habian comentarios usamos delete
-        const respuestaBorrado = await fetch(`http://localhost:3000/posts/${id}`, {
-            method: 'DELETE'
-        });
-
-        if (respuestaBorrado.ok) {
-            // Validamos que se haya eliminado el post
-            const validar = await fetch(`http://localhost:3000/posts/${id}`);
-            if (validar.status === 404) {
-                console.log("El post no existe en la base de datos");
-            }
+        if (exito) {
+            console.log(`Publicación ${id} eliminada con éxito.`);
         } else {
-            console.log("La publicación no se pudo eliminar");
+            // Si el servidor responde con error (ej. 404 porque no existía)
+            console.error(`Error: La publicación ${id} no pudo ser eliminada (posiblemente no existe).`);
         }
     }
 }
 
+// Probando con el ID 5
 EliminarPublicacion(5);
